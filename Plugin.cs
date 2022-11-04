@@ -13,7 +13,7 @@ using Il2CppSystem.IO;
 namespace BailSkinLoader
 {
 
-    [BepInPlugin("craftersshaft.bailorjailmods.bailskinloader", "Bail or Jail Skin Loader", "0.0.2")]
+    [BepInPlugin("craftersshaft.bailorjailmods.bailskinloader", "Bail or Jail Skin Loader", "0.0.3")]
     public class BailSkinLoaderPlugin : BasePlugin
     {
         internal static BailSkinLoaderPlugin Instance;
