@@ -29,7 +29,7 @@ namespace BailSkinLoader
 
         public static List<AssetBundle> realAssetBundles = new List<AssetBundle>();
 
-        public static bool orbinTime = false;
+        public static bool orbinTime = true;
 
 
         [HarmonyPatch(typeof(ChrAsset.Item), nameof(ChrAsset.Item.GetText))]
