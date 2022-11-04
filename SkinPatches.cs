@@ -14,6 +14,7 @@ using Path = Il2CppSystem.IO.Path;
 using System.Linq;
 using File = Il2CppSystem.IO.File;
 using UnhollowerBaseLib;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace BailSkinLoader
 {	
@@ -30,6 +31,33 @@ namespace BailSkinLoader
         public static List<AssetBundle> realAssetBundles = new List<AssetBundle>();
 
         public static bool orbinTime = true;
+
+        public static bool shouldReplaceTexturesFromBundles = false; //disabling by default so that png textures take priority, if a better solution for managing both arrives/more mods demand it i can turn it on
+
+        public static void ReplaceTexture(string textureName, Texture2D theTexture)
+        {
+            var tempObject = new UnityEngine.Object();
+            if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(textureName) && originalObjects.TryGetValue(textureName, out tempObject) == false)
+            {
+                SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().m_unityObjectMap[textureName].objects[0]);
+
+                if (OrgResources.GetInstance().m_unityObjectMap[textureName].objects[0].GetIl2CppType().FullName.StartsWith("UnityEngine.Texture2D"))
+                {
+                    OrgResources.GetInstance().m_unityObjectMap[textureName].objects[0] = theTexture;
+                }
+                else
+                {
+                    BailSkinLoaderPlugin.Instance.Log.LogError("this asset was not a texture! " + textureName);
+                }
+            }
+            else
+            {
+                BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for texture " + textureName + " so we added it");
+                OrgResources.GetInstance().m_unityObjectMap.Add(textureName, new ResourceManager.ResourceInfo());
+                OrgResources.GetInstance().m_unityObjectMap[textureName].objects.AddItem(theTexture);
+            }
+
+        }
 
 
         [HarmonyPatch(typeof(ChrAsset.Item), nameof(ChrAsset.Item.GetText))]
@@ -69,48 +97,64 @@ namespace BailSkinLoader
                                 GameObject realAsset = (GameObject)realAssetBundle.LoadAsset<GameObject>(realAssetName);
                                 examinedModel = realAsset;
 
-                                SkinPatches.originalObjects.Add(fileNameWithoutExtension, OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects[0]);
 
-
-                                GameObject tempBoner = OrgResources.GetInstance().Load<GameObject>("body103003000");
+                                GameObject tempBoner = OrgResources.GetInstance().Load<GameObject>(realAssetName);
                                 BailSkinLoaderPlugin.Instance.Log.LogInfo("got TempBoner: " + tempBoner.ToString());
-                                SkinnedMeshRenderer tempBoney = tempBoner.transform.Find("mesh_body103003000").gameObject.GetComponent<SkinnedMeshRenderer>();
-                                BailSkinLoaderPlugin.Instance.Log.LogInfo("got BoneRenderer: " + tempBoney.ToString());
 
-                                for (var eye = 0; eye < (realAsset.transform.childCount - 1); eye++)
+                                for (var guy = 0; guy < (tempBoner.transform.childCount - 1); guy++)
                                 {
-                                    var skinnyMesh = realAsset.transform.GetChild(eye).gameObject.GetComponent<SkinnedMeshRenderer>();
+                                    SkinnedMeshRenderer tempBoney = tempBoner.transform.GetChild(guy).gameObject.GetComponent<SkinnedMeshRenderer>();
 
-                                    if (skinnyMesh)
+                                    if (tempBoney)
                                     {
-                                        var childName = realAsset.transform.GetChild(eye).name;
-                                        tempBoney.sharedMesh = skinnyMesh.sharedMesh;
-                                        tempBoney.bones = skinnyMesh.bones;
-                                        //tempBoney.material.mainTexture = skinnyMesh.material.mainTexture;
-                                        if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(childName) && originalObjects.TryGetValue(childName, out tempObject) == false)
+                                        tempBoney = tempBoner.transform.Find(tempBoney.name).gameObject.GetComponent<SkinnedMeshRenderer>();
+                                        BailSkinLoaderPlugin.Instance.Log.LogInfo("got BoneRenderer: " + tempBoney.ToString());
+
+
+                                        for (var eye = 0; eye < (realAsset.transform.childCount - 1); eye++)
                                         {
-                                            if (!SkinPatches.originalObjects.ContainsKey(childName))
+                                            var skinnyMesh = realAsset.transform.GetChild(eye).gameObject.GetComponent<SkinnedMeshRenderer>();
+
+                                            if (skinnyMesh)
                                             {
-                                                SkinPatches.originalObjects.Add(childName, OrgResources.GetInstance().m_unityObjectMap[childName].objects[0]);
+                                                var childName = realAsset.transform.GetChild(eye).name;
+                                                BailSkinLoaderPlugin.Instance.Log.LogInfo("got skinnyMesh: " + childName);
+                                                tempBoney.sharedMesh = skinnyMesh.sharedMesh;
+                                                tempBoney.bones = skinnyMesh.bones;
+                                                if (shouldReplaceTexturesFromBundles)
+                                                {
+
+                                                    ReplaceTexture(tempBoney.material.mainTexture.name, skinnyMesh.material.mainTexture.Cast<Texture2D>());
+                                                }
+                                                if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(realAssetName) && originalObjects.TryGetValue(realAssetName, out tempObject) == false)
+                                                {
+                                                    if (!SkinPatches.originalObjects.ContainsKey(realAssetName))
+                                                    {
+                                                        SkinPatches.originalObjects.Add(realAssetName, OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects[0]);
+                                                    }
+
+                                                    for (var aye = 0; aye < (OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects.Count - 1); aye++)
+                                                    {
+
+                                                        if (OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects[aye].GetIl2CppType().FullName.StartsWith("UnityEngine.GameObject"))
+                                                        {
+                                                            BailSkinLoaderPlugin.Instance.Log.LogInfo("replacing GameObject: " + realAssetName);
+                                                            OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects[aye] = tempBoner;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for object " + realAssetName + " so we added it");
+                                                    OrgResources.GetInstance().m_unityObjectMap.Add(realAssetName, new ResourceManager.ResourceInfo());
+                                                    OrgResources.GetInstance().m_unityObjectMap[realAssetName].objects.AddItem(tempBoney);
+                                                }
+
+                                                BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace skinnedmeshrenderer: " + tempBoner.name);
+
                                             }
 
-                                            if (OrgResources.GetInstance().m_unityObjectMap[childName].objects[0].GetIl2CppType().FullName.StartsWith("UnityEngine.SkinnedMeshRenderer"))
-                                            {
-                                                OrgResources.GetInstance().m_unityObjectMap[childName].objects[0] = tempBoney;
-                                            }
-                                            else
-                                            {
-                                                BailSkinLoaderPlugin.Instance.Log.LogError("this asset was not a SkinnedMeshRenderer! " + childName);
-                                            }
                                         }
-                                        else
-                                        {
-                                            BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for object " + childName + " so we added it");
-                                            OrgResources.GetInstance().m_unityObjectMap.Add(childName, new ResourceManager.ResourceInfo());
-                                            OrgResources.GetInstance().m_unityObjectMap[childName].objects.AddItem(tempBoney);
-                                        }
-
-                                        BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace skinnedmeshrenderer: " + tempBoner.name);
 
                                     }
 
@@ -145,23 +189,7 @@ namespace BailSkinLoader
                             fileData = File.ReadAllBytes(text);
                             tex = new Texture2D(2, 2);
                             tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
-                            if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(fileNameWithoutExtension) && originalObjects.TryGetValue(fileNameWithoutExtension, out tempObject) == false)
-                            {
-                                SkinPatches.originalObjects.Add(fileNameWithoutExtension, OrgResources.GetInstance().m_unityObjectMap[fileNameWithoutExtension].objects[0]);
-
-                                if (OrgResources.GetInstance().m_unityObjectMap[fileNameWithoutExtension].objects[0].GetIl2CppType().FullName.StartsWith("UnityEngine.Texture2D")) {
-                                    OrgResources.GetInstance().m_unityObjectMap[fileNameWithoutExtension].objects[0] = tex;
-                                } else
-                                {
-                                    BailSkinLoaderPlugin.Instance.Log.LogError("this asset was not a texture! " + fileNameWithoutExtension);
-                                }
-                            }
-                            else
-                            {
-                                BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for texture " + fileNameWithoutExtension + " so we added it");
-                                OrgResources.GetInstance().m_unityObjectMap.Add(fileNameWithoutExtension, new ResourceManager.ResourceInfo());
-                                OrgResources.GetInstance().m_unityObjectMap[fileNameWithoutExtension].objects.AddItem(tex);
-                            }
+                            ReplaceTexture(fileNameWithoutExtension, tex);
 
 
 

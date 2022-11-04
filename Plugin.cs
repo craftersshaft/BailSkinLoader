@@ -18,7 +18,6 @@ namespace BailSkinLoader
     {
         internal static BailSkinLoaderPlugin Instance;
         public static string rootCustomTexPath;
-        internal ChrAsset originalChrAsset;
         public override void Load()
         {
             Instance = this;
