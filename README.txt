@@ -33,6 +33,6 @@ For creating .png mods, Any texture size should work unless something messed up,
 
 For creating .assets mods, you'll need to install the Unity Editor (2020.3.15 worked for me) and make sure you can make/already have a project with the fbx files corresponding to models you want to replace. 
 Make a prefab with the name of the asset you want to replace (no folder names/extensions before .prefab) and make the first two children in the hiearchy the SkinnedMeshRenderer and the skeleton.
-You can drag and drop an FBX file onto the stage, and Unpack it if the nodes don't move. 
+You can drag and drop an FBX file onto the stage, and Unpack it if the nodes don't move. also make sure read/write is enabled on the fbx
 In the assets list at the bottom of the inspector, there should be an AssetBundle thing with two dropdowns. Name the first one whatever you want, but make sure the second one is just "assets".
 Find a BuildAssetBundles script that can export your new bundle into an .assets file, then drag into the bepinex/CustomTextures/(character id) folder.

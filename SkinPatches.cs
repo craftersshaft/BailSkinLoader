@@ -131,7 +131,10 @@ namespace BailSkinLoader
 
                             BailSkinLoaderPlugin.Instance.Log.LogInfo("Found PNG: " + text);
                             BailSkinLoaderPlugin.Instance.Log.LogInfo("Without Extension: " + fileNameWithoutExtension);
-                            OrgResources.GetInstance().Load(fileNameWithoutExtension);
+
+                            if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(fileNameWithoutExtension)) {
+                                OrgResources.GetInstance().Load(fileNameWithoutExtension);
+                            }
 
 
                             Texture2D tex = null;
