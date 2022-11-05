@@ -39,6 +39,8 @@ namespace BailSkinLoader
 
         public static bool orbinTime = true;
 
+        public static bool shouldReplaceAudio = true; //setting to true by default for now unless we have An Incident
+
         public static GameObject obj;
 
         public static AudioClip debugClip;
@@ -76,11 +78,13 @@ namespace BailSkinLoader
                                 SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<AnimationClip>(textureName));
                                 OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AnimationClip>();
                                 break;
-                            case "UnityEngine.AudioClip": 
-                                SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<UnityEngine.AudioClip>(textureName));
-                                OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AudioClip>();
-                                debugClip =  theTexture.Cast<AudioClip>();
-                                BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace AudioClip "+textureName);
+                            case "UnityEngine.AudioClip":
+                                if (shouldReplaceAudio)
+                                {
+                                    SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<UnityEngine.AudioClip>(textureName));
+                                    OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AudioClip>();
+                                    debugClip = theTexture.Cast<AudioClip>();
+                                }
                                 break;
 
                             default:
