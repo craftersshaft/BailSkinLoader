@@ -41,11 +41,14 @@ namespace BailSkinLoader
 
         public static GameObject obj;
 
+        public static AudioClip debugClip;
+
         public static bool shouldReplaceTexturesFromBundles = false; //disabling by default so that png textures take priority, if a better solution for managing both arrives/more mods demand it i can turn it on
 
 
-        public static void ReplaceTexture(string textureName, UnityEngine.Object theTexture, string theClass = "UnityEngine.Texture2D")
+        public static void ReplaceTexture(string textureNameUpper, UnityEngine.Object theTexture, string theClass = "UnityEngine.Texture2D")
         {
+            string textureName = textureNameUpper.ToLower();
             var tempObject = new UnityEngine.Object();
             if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(textureName) && originalObjects.TryGetValue(textureName, out tempObject) == false)
             {
@@ -76,6 +79,8 @@ namespace BailSkinLoader
                             case "UnityEngine.AudioClip": 
                                 SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<UnityEngine.AudioClip>(textureName));
                                 OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AudioClip>();
+                                debugClip =  theTexture.Cast<AudioClip>();
+                                BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace AudioClip "+textureName);
                                 break;
 
                             default:
@@ -205,14 +210,17 @@ namespace BailSkinLoader
                                         BailSkinLoaderPlugin.Instance.Log.LogInfo("got TempBoner: " + tempBoner.ToString());
                                         ReplaceTexture(realAssetName, tempBoner, "UnityEngine.AnimationClip");
 
-                                    } else if (Path.GetFileName(realAssetBundle.AllAssetNames()[asseteye]).EndsWith(".ogg"))
+                                    } else if (Path.GetFileName(realAssetBundle.AllAssetNames()[asseteye]).EndsWith(".ogg") || Path.GetFileName(realAssetBundle.AllAssetNames()[asseteye]).EndsWith(".wav"))
                                     {
 
-                                        AudioClip realAsset = realAssetBundle.LoadAsset<AudioClip>(realAssetName);
+                                        AudioClip realAsset = realAssetBundle.LoadAsset<AudioClip>(Path.GetFileName(realAssetBundle.AllAssetNames()[asseteye]));
 
-                                        AudioClip tempBoner = OrgResources.GetInstance().Load<AudioClip>(realAssetName);
-                                        BailSkinLoaderPlugin.Instance.Log.LogInfo("got TempBoner: " + tempBoner.ToString());
-                                        ReplaceTexture(realAssetName, tempBoner, "UnityEngine.AudioClip");
+                                        AudioClip tempBoner = OrgResources.GetInstance().Load<AudioClip>(Path.GetFileNameWithoutExtension(realAssetName));
+
+                                        realAsset.name = tempBoner.name;
+
+                                        BailSkinLoaderPlugin.Instance.Log.LogInfo("got RealAsset: " + realAsset.ToString());
+                                        ReplaceTexture(realAssetName, realAsset, "UnityEngine.AudioClip");
                                     }
                                 }
 
