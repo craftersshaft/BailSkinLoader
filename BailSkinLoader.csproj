@@ -50,14 +50,5 @@
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\BailOrJail\BepInEx\unhollowed\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestAudioModule">
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\BailOrJail\BepInEx\unhollowed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\BailOrJail\BepInEx\unhollowed\UnityEngine.UnityWebRequestModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\BailOrJail\BepInEx\unhollowed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
-    </Reference>
   </ItemGroup>
 </Project>

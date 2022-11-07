@@ -45,6 +45,8 @@ namespace BailSkinLoader
 
         public static AudioClip debugClip;
 
+        public static List<string> alreadyReplacedAudio = new List<string>();
+
         public static int increMentally = 0;
 
         public static bool shouldReplaceTexturesFromBundles = false; //disabling by default so that png textures take priority, if a better solution for managing both arrives/more mods demand it i can turn it on
@@ -147,7 +149,7 @@ namespace BailSkinLoader
             var tempObject = new UnityEngine.Object();
             if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(textureName))
             {
-                BailSkinLoaderPlugin.Instance.Log.LogInfo("Trying to replace asset: "+textureName);
+                BailSkinLoaderPlugin.Instance.Log.LogInfo("Trying to replace asset: "+ textureName);
 
 
                 for (var infuriating = 0; infuriating < OrgResources.GetInstance().m_unityObjectMap[textureName].objects.Length; infuriating++)
@@ -172,7 +174,15 @@ namespace BailSkinLoader
                                 if (shouldReplaceAudio)
                                 {
                                     OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AudioClip>();
+                                    if (textureName.StartsWith("bgm_"))
+                                    {
+                                        SoundManager.instance.m_resourceLoader.m_unityObjectMap["Sound/Bgm/"+textureName] = theTexture.Cast<AudioClip>();
+                                    } else
+                                    {
+                                        SoundManager.instance.m_resourceLoader.m_unityObjectMap[textureName] = theTexture.Cast<AudioClip>();
+                                    }
                                     debugClip = theTexture.Cast<AudioClip>();
+                                    alreadyReplacedAudio.Add(textureName);
                                 }
                                 break;
 
@@ -214,7 +224,20 @@ namespace BailSkinLoader
                         increMentally++;
                         awwdio.soundId = 69420 + increMentally;
                         SoundResourceAsset.instance.items.Add(awwdio);
-                        SoundManager.instance.m_resourceLoader.m_unityObjectMap.Add(textureName, theTexture.Cast<AudioClip>());
+                        if (textureName.StartsWith("bgm_"))
+                        {
+                            BailSkinLoaderPlugin.Instance.Log.LogInfo("we should try to replace Sound/Bgm/" + textureNameUpper);
+                            if (SoundManager.instance.m_resourceLoader.m_unityObjectMap.ContainsKey("Sound/Bgm/")) {
+                                SoundManager.instance.m_resourceLoader.m_unityObjectMap["Sound/Bgm/" + textureNameUpper] = theTexture.Cast<AudioClip>();
+                            } else
+                            {
+                                SoundManager.instance.m_resourceLoader.m_unityObjectMap.Add("Sound/Bgm/" + textureNameUpper, theTexture.Cast<AudioClip>());
+                            }
+                        }
+                        else
+                        {
+                            SoundManager.instance.m_resourceLoader.m_unityObjectMap[textureName] = theTexture.Cast<AudioClip>();
+                        }
 
                         break;
                 }
@@ -393,8 +416,24 @@ namespace BailSkinLoader
 
                         }
 
+                        foreach (string text in from x in Directory.GetFiles(thisCharacterTexPath)
+                                                where x.ToLower().EndsWith(".wav")
+                                                select x)
+                        {
+                            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text);
+                            if (!alreadyReplacedAudio.Contains(fileNameWithoutExtension)) {
+                                BailSkinLoaderPlugin.Instance.Log.LogInfo("trying to add wav sfx " + fileNameWithoutExtension);
+                                AudioClip aaEeOoAudioJungle = WavUtility.ToAudioClip(text);
+                                if (aaEeOoAudioJungle != null)
+                                {
+                                    ReplaceTexture(fileNameWithoutExtension, aaEeOoAudioJungle, "UnityEngine.AudioClip");
+                                }
 
-                        BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace ChrAsset Add");
+
+                            }
+                        }
+
+                            BailSkinLoaderPlugin.Instance.Log.LogInfo("tried to replace ChrAsset Add");
                     }
                 }
                 catch (Exception e)
