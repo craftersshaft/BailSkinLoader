@@ -23,6 +23,8 @@ using UnhollowerRuntimeLib;
 using BepInEx.IL2CPP.Utils.Collections;
 using Application = UnityEngine.Application;
 using Il2CppSystem.Threading.Tasks;
+using static FreeStyle.Unity.Obakeidoro.AnimEventAsset;
+using Zentame2018_Unity;
 
 namespace BailSkinLoader
 {	
@@ -30,8 +32,6 @@ namespace BailSkinLoader
 	public static class SkinPatches
 	{
         public static Dictionary<string, ResourceManager.ResourceInfo> objectList;
-
-        public static Dictionary<string, UnityEngine.Object> originalObjects = new Dictionary<string, UnityEngine.Object>();
 
         public static GameObject examinedModel;
 
@@ -45,14 +45,107 @@ namespace BailSkinLoader
 
         public static AudioClip debugClip;
 
+        public static int increMentally = 0;
+
         public static bool shouldReplaceTexturesFromBundles = false; //disabling by default so that png textures take priority, if a better solution for managing both arrives/more mods demand it i can turn it on
+
+
+        public static void AddAnimEvents(string animFileName, Il2CppSystem.Collections.Generic.List<SoundEventData> soundEvents, Il2CppSystem.Collections.Generic.List<EffectEventData> effectEvents, Il2CppSystem.Collections.Generic.List<TagEventData> tagEvents)
+        {
+            var testible = new AnimEventItem();
+            testible.animFileName = animFileName;
+            testible.dataName = "Skin Loader Custom Sound " + animFileName;
+
+            if (soundEvents != null) {
+                for (var soundNum = 0; soundNum < soundEvents.Count - 1; soundNum++)
+                {
+                    FreeStyle.Unity.Obakeidoro.AnimEventHelper._AddSoundEvent(FreeStyle.Unity.Common.OrgResources.GetInstance().Load<AnimationClip>(animFileName).Cast<AnimationClip>(), testible.soundEvent[soundNum]);
+                }
+            } else { soundEvents = new Il2CppSystem.Collections.Generic.List<SoundEventData>(); }
+            if (effectEvents != null)
+            {
+                for (var effectNum = 0; effectNum < effectEvents.Count - 1; effectNum++)
+                {
+                    FreeStyle.Unity.Obakeidoro.AnimEventHelper._AddEffectEvent(FreeStyle.Unity.Common.OrgResources.GetInstance().Load<AnimationClip>(animFileName).Cast<AnimationClip>(), testible.effectEvent[effectNum]);
+                }
+            }else { effectEvents = new Il2CppSystem.Collections.Generic.List<EffectEventData>(); }
+            if (tagEvents != null)
+            {
+                for (var tagNum = 0; tagNum < tagEvents.Count - 1; tagNum++)
+                {
+                    FreeStyle.Unity.Obakeidoro.AnimEventHelper._AddTagEvent(FreeStyle.Unity.Common.OrgResources.GetInstance().Load<AnimationClip>(animFileName).Cast<AnimationClip>(), testible.tagEvent[tagNum]);
+                }
+            }
+            else { tagEvents = new Il2CppSystem.Collections.Generic.List<TagEventData>(); }
+
+            testible.soundEvent = soundEvents; //sorry for all this
+            testible.effectEvent = effectEvents; //this code may be spaghetti
+            testible.tagEvent = tagEvents; //but at least it works
+
+            if (!AnimEventAsset.entity.animEventItems.Contains(testible)) {
+                FreeStyle.Unity.Obakeidoro.AnimEventAsset.entity.animEventItems.Add(testible);
+                BailSkinLoaderPlugin.Instance.Log.LogInfo("added AnimEvents to animation " + animFileName);
+            }
+        }
+
+        public static void QuickAddSoundEvent(string animFileName, int soundId)
+        {
+
+            var soundEvents = new Il2CppSystem.Collections.Generic.List<SoundEventData>();
+
+            var soundEventThingy = new SoundEventData();
+            soundEventThingy.soundId = soundId;
+            soundEventThingy.eventTime = 0;
+            soundEvents.Add(soundEventThingy);
+
+            AddAnimEvents(animFileName, soundEvents, null, null);
+
+
+        }
+
+        public static void QuickAddEffectEvent(string animFileName, int effectId)
+        {
+
+            var effectEvents = new Il2CppSystem.Collections.Generic.List<EffectEventData>();
+
+            var effectEventThingy = new EffectEventData();
+            effectEventThingy.effectId = effectId;
+            effectEventThingy.eventTime = 0;
+            effectEvents.Add(effectEventThingy);
+
+            AddAnimEvents(animFileName, null, effectEvents, null);
+
+
+        }
+
+        public static void QuickAddSoundEffectEvent(string animFileName, int soundId, int effectId)
+        {
+
+            var soundEvents = new Il2CppSystem.Collections.Generic.List<SoundEventData>();
+
+            var soundEventThingy = new SoundEventData();
+            soundEventThingy.soundId = soundId;
+            soundEventThingy.eventTime = 0;
+            soundEvents.Add(soundEventThingy);
+
+            var effectEvents = new Il2CppSystem.Collections.Generic.List<EffectEventData>();
+
+            var effectEventThingy = new EffectEventData();
+            effectEventThingy.effectId = effectId;
+            effectEventThingy.eventTime = 0;
+            effectEvents.Add(effectEventThingy);
+
+            AddAnimEvents(animFileName, soundEvents, effectEvents, null);
+
+
+        }
 
 
         public static void ReplaceTexture(string textureNameUpper, UnityEngine.Object theTexture, string theClass = "UnityEngine.Texture2D")
         {
             string textureName = textureNameUpper.ToLower();
             var tempObject = new UnityEngine.Object();
-            if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(textureName) && originalObjects.TryGetValue(textureName, out tempObject) == false)
+            if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(textureName))
             {
                 BailSkinLoaderPlugin.Instance.Log.LogInfo("Trying to replace asset: "+textureName);
 
@@ -67,21 +160,17 @@ namespace BailSkinLoader
                         switch (theClass)
                         {
                             case "UnityEngine.Texture2D":
-                                SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<Texture2D>(textureName));
                                 OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<Texture2D>();
                                 break;
                             case "UnityEngine.GameObject":
-                                SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<GameObject>(textureName));
                                 OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<GameObject>();
                                 break;
                             case "UnityEngine.AnimationClip":
-                                SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<AnimationClip>(textureName));
                                 OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AnimationClip>();
                                 break;
                             case "UnityEngine.AudioClip":
                                 if (shouldReplaceAudio)
                                 {
-                                    SkinPatches.originalObjects.Add(textureName, OrgResources.GetInstance().Load<UnityEngine.AudioClip>(textureName));
                                     OrgResources.GetInstance().m_unityObjectMap[textureName].objects[infuriating] = theTexture.Cast<AudioClip>();
                                     debugClip = theTexture.Cast<AudioClip>();
                                 }
@@ -96,15 +185,55 @@ namespace BailSkinLoader
                     else
                     {
                         BailSkinLoaderPlugin.Instance.Log.LogError("this asset was not a " + theClass + "! " + textureName);
+
                     }
 
                 }
             }
             else
             {
-                BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for texture " + textureName + " so we added it");
+                BailSkinLoaderPlugin.Instance.Log.LogInfo("no key exists for "+theClass+" " + textureName + " so we added it");
                 OrgResources.GetInstance().m_unityObjectMap.Add(textureName, new ResourceManager.ResourceInfo());
-                OrgResources.GetInstance().m_unityObjectMap[textureName].objects.AddItem(theTexture);
+                OrgResources.GetInstance().m_unityObjectMap[textureName].objects = new Il2CppReferenceArray<UnityEngine.Object>(1);
+                switch (theClass)
+                {
+                    case "UnityEngine.Texture2D":
+                        OrgResources.GetInstance().m_unityObjectMap[textureName].objects[0] = (theTexture.Cast<Texture2D>());
+                        break;
+                    case "UnityEngine.GameObject":
+                        OrgResources.GetInstance().m_unityObjectMap[textureName].objects[0] = (theTexture.Cast<GameObject>());
+                        break;
+                    case "UnityEngine.AudioClip":
+                        ResourceManager.GetInstance().m_unityObjectMap[textureName].objects[0] = (theTexture.Cast<AudioClip>());
+                        var awwdio = new SoundResourceAsset.Item();
+                        awwdio.delay = 0;
+                        awwdio.distance = 10;
+                        awwdio.filePath = textureName;
+                        awwdio.volume = 1;
+                        awwdio.name = "Skin Loader Custom Sound" + textureName;
+                        increMentally++;
+                        awwdio.soundId = 69420 + increMentally;
+                        SoundResourceAsset.instance.items.Add(awwdio);
+                        SoundManager.instance.m_resourceLoader.m_unityObjectMap.Add(textureName, theTexture.Cast<AudioClip>());
+
+                        break;
+                }
+            }
+
+        }
+
+        [HarmonyPatch(typeof(ResourceLoader), nameof(ResourceLoader.LoadAsset))]
+
+        public static class Patch_ResourceLoader_LoadAsset
+        {
+            public static void Postfix (ref ResourceLoader __instance, ref string path)
+            {
+                UnityEngine.Object tempObject;
+                if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(path) && __instance.m_unityObjectMap.TryGetValue(path, out tempObject) == false)
+                {
+                    __instance.m_unityObjectMap.Add(path, OrgResources.GetInstance().Load(path));
+                    BailSkinLoaderPlugin.Instance.Log.LogInfo("manually needed to add sound effect "+path);
+                }
             }
 
         }
@@ -121,7 +250,6 @@ namespace BailSkinLoader
                     var thisCharacterTexPath = Path.Combine(BailSkinLoaderPlugin.rootCustomTexPath, __instance.id.ToString());
                     if (System.IO.Directory.Exists(thisCharacterTexPath))
                     {
-                        UnityEngine.Object tempObject;
                         //var subDirectories = Directory.GetDirectories(thisCharacterTexPath);
 
                         //foreach (var subDirectory in subDirectories)
@@ -184,10 +312,10 @@ namespace BailSkinLoader
                                                     {
                                                         ReplaceTexture(tempBoney.material.mainTexture.name, skinnyMesh.material.mainTexture.Cast<Texture2D>(), "UnityEngine.Texture2D");
                                                     }
-                                                    if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(realAssetName) && originalObjects.TryGetValue(realAssetName, out tempObject) == false)
+                                                    if (OrgResources.GetInstance().m_unityObjectMap.ContainsKey(realAssetName))
                                                     {
                                                         BailSkinLoaderPlugin.Instance.Log.LogInfo("replacing GameObject: " + realAssetName);
-                                                        ReplaceTexture(tempBoney.material.mainTexture.name, skinnyMesh.material.mainTexture.Cast<Texture2D>(), "UnityEngine.GameObject");
+                                                        //ReplaceTexture(realAssetName, skinnyMesh.material.mainTexture.Cast<Texture2D>(), "UnityEngine.Texture2D");
 
                                                     }
                                                     else
@@ -219,9 +347,9 @@ namespace BailSkinLoader
 
                                         AudioClip realAsset = realAssetBundle.LoadAsset<AudioClip>(Path.GetFileName(realAssetBundle.AllAssetNames()[asseteye]));
 
-                                        AudioClip tempBoner = OrgResources.GetInstance().Load<AudioClip>(Path.GetFileNameWithoutExtension(realAssetName));
-
-                                        realAsset.name = tempBoner.name;
+                                        //AudioClip tempBoner = OrgResources.GetInstance().Load<AudioClip>(Path.GetFileNameWithoutExtension(realAssetName));
+                                        //this caused issues with new custom sfx
+                                        //realAsset.name = tempBoner.name;
 
                                         BailSkinLoaderPlugin.Instance.Log.LogInfo("got RealAsset: " + realAsset.ToString());
                                         ReplaceTexture(realAssetName, realAsset, "UnityEngine.AudioClip");
