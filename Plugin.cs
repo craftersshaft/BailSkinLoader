@@ -13,11 +13,12 @@ using Il2CppSystem.IO;
 namespace BailSkinLoader
 {
 
-    [BepInPlugin("craftersshaft.bailorjailmods.bailskinloader", "Bail or Jail Skin Loader", "0.0.3")]
+    [BepInPlugin("craftersshaft.bailorjailmods.bailskinloader", "Bail or Jail Skin Loader", "0.0.4")]
     public class BailSkinLoaderPlugin : BasePlugin
     {
         internal static BailSkinLoaderPlugin Instance;
         public static string rootCustomTexPath;
+        public static ResourceManager resourceManager;
         public override void Load()
         {
             Instance = this;
@@ -27,6 +28,7 @@ namespace BailSkinLoader
             rootCustomTexPath = rootCustomTexPath.Replace("\\", "/");
             Directory.CreateDirectory(rootCustomTexPath);
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
+            resourceManager = ResourceManager.GetInstance();
         }
     }
 
